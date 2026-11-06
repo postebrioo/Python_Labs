@@ -1,15 +1,26 @@
 import math
 import heapq
-from typing import Protocol, List, Dict
+from typing import Protocol, List, Dict, Sequence, Literal
 from findex.index import Index
-from findex.models import SearchResult, Posting
+from findex.models import SearchResult
+
+# Тимчасовий тип для Literal-перевірок
+ScorerType = Literal["tf-idf", "bm25"]
+
 
 class Scorer(Protocol):
-    def score(self, index: Index, query_terms: List[str], matching_docs: List[int]) -> List[SearchResult]:
+    """Protocol для перевірки відповідності реалізацій без наслідування."""
+
+    def score(
+        self, index: Index, query_terms: Sequence[str], matching_docs: Sequence[int]
+    ) -> List[SearchResult]:
         ...
 
+
 class TfIdfScorer:
-    def score(self, index: Index, query_terms: List[str], matching_docs: List[int]) -> List[SearchResult]:
+    def score(
+        self, index: Index, query_terms: Sequence[str], matching_docs: Sequence[int]
+    ) -> List[SearchResult]:
         scores: Dict[int, float] = {doc_id: 0.0 for doc_id in matching_docs}
         N = index.num_docs
 
@@ -25,17 +36,25 @@ class TfIdfScorer:
                     scores[posting.doc_id] += tf * idf
 
         results = [
-            SearchResult(score=round(sc, 4), doc_id=d_id, filename=index.metadata[d_id].filename, snippet="")
+            SearchResult(
+                score=round(sc, 4),
+                doc_id=d_id,
+                filename=index.metadata[d_id].filename,
+                snippet="",
+            )
             for d_id, sc in scores.items()
         ]
         return heapq.nlargest(len(results), results)
 
-class BM25Scorer:
-    def __init__(self, k1: float = 1.5, b: float = 0.75):
-        self.k1 = k1
-        self.b = b
 
-    def score(self, index: Index, query_terms: List[str], matching_docs: List[int]) -> List[SearchResult]:
+class BM25Scorer:
+    def __init__(self, k1: float = 1.5, b: float = 0.75) -> None:
+        self.k1: float = k1
+        self.b: float = b
+
+    def score(
+        self, index: Index, query_terms: Sequence[str], matching_docs: Sequence[int]
+    ) -> List[SearchResult]:
         scores: Dict[int, float] = {doc_id: 0.0 for doc_id in matching_docs}
         N = index.num_docs
         avgdl = index.avg_doc_length
@@ -54,7 +73,22 @@ class BM25Scorer:
                     scores[posting.doc_id] += idf * (num / denom)
 
         results = [
-            SearchResult(score=round(sc, 4), doc_id=d_id, filename=index.metadata[d_id].filename, snippet="")
+            SearchResult(
+                score=round(sc, 4),
+                doc_id=d_id,
+                filename=index.metadata[d_id].filename,
+                snippet="",
+            )
             for d_id, sc in scores.items()
         ]
         return heapq.nlargest(len(results), results)
+
+
+def get_scorer(scorer_type: ScorerType) -> Scorer:
+    """Фабрична функція для створення скорерів через Literal."""
+    if scorer_type == "tf-idf":
+        return TfIdfScorer()
+    elif scorer_type == "bm25":
+        return BM25Scorer()
+    else:
+        raise ValueError(f"Unknown scorer algorithm: {scorer_type}")
