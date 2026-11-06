@@ -1,107 +1,85 @@
-import time
 import argparse
 import tracemalloc
-from typing import List, Set, Tuple
-from findex.index import InvertedIndex
+from typing import List
 
-def merge_and(postings1: List[int], postings2: List[int]) -> List[int]:
-    """Двовказівниковий merge для операції AND"""
-    res = []
-    i, j = 0, 0
-    len1, len2 = len(postings1), len(postings2)
-    while i < len1 and j < len2:
-        if postings1[i] == postings2[j]:
-            res.append(postings1[i])
-            i += 1
-            j += 1
-        elif postings1[i] < postings2[j]:
-            i += 1
-        else:
-            j += 1
-    return res
+from findex.index import open_index, Index
+from findex.query_parser import parse_query, Term, Phrase, And, Or, Not
+from findex.scoring import BM25Scorer, TfIdfScorer, Scorer
+from findex.utils import timed, generate_snippet, cached_search_ids
+from findex.models import SearchResult
 
-def merge_or(postings1: List[int], postings2: List[int]) -> List[int]:
-    """Двовказівниковий merge для операції OR"""
-    res = []
-    i, j = 0, 0
-    len1, len2 = len(postings1), len(postings2)
-    while i < len1 and j < len2:
-        if postings1[i] == postings2[j]:
-            res.append(postings1[i])
-            i += 1
-            j += 1
-        elif postings1[i] < postings2[j]:
-            res.append(postings1[i])
-            i += 1
-        else:
-            res.append(postings2[j])
-            j += 1
-    while i < len1:
-        res.append(postings1[i])
-        i += 1
-    while j < len2:
-        res.append(postings2[j])
-        j += 1
-    return res
+def extract_query_terms(node) -> List[str]:
+    """Витягуємо окремі терми з AST-дерева для підрахунку релевантності та сніпетів"""
+    if isinstance(node, Term):
+        return [node.term]
+    elif isinstance(node, Phrase):
+        return node.tokens
+    elif isinstance(node, (And, Or)):
+        return extract_query_terms(node.left) + extract_query_terms(node.right)
+    elif isinstance(node, Not):
+        return extract_query_terms(node.child)
+    return []
 
-def search_merge(index: InvertedIndex, query: str) -> List[int]:
-    tokens = query.lower().split()
-    if not tokens:
-        return []
+@timed
+def execute_search(index: Index, query_str: str, scorer: Scorer, top_k: int = 5) -> List[SearchResult]:
+    # 1. Парсимо запит у дерево AST
+    ast_root = parse_query(query_str)
     
-    # Витягуємо впорядковані списки doc_id для кожного терміна
-    postings = [[p.doc_id for p in index.index.get(t, [])] for t in tokens if t not in ("and", "or", "not")]
-    if not postings:
+    # 2. Отримуємо doc_id документів, які відповідають умовам
+    matching_docs = list(ast_root.evaluate(index))
+    if not matching_docs:
         return []
 
-    # За замовчуванням обробка як AND-запит
-    result = postings[0]
-    for p in postings[1:]:
-        result = merge_and(result, p)
-    return result
+    # 3. Витягуємо терми для ранжування
+    terms = extract_query_terms(ast_root)
+    
+    # 4. Ранжуємо документи через обраний Scorer (BM25 / TF-IDF)
+    results = scorer.score(index, terms, matching_docs)
 
-def search_set(index: InvertedIndex, query: str) -> List[int]:
-    tokens = query.lower().split()
-    if not tokens:
-        return []
-    
-    sets = [set(p.doc_id for p in index.index.get(t, [])) for t in tokens if t not in ("and", "or", "not")]
-    if not sets:
-        return []
-    
-    result = sets[0]
-    for s in sets[1:]:
-        result = result.intersection(s)
-    return sorted(list(result))
+    # 5. Демонстрація робочого клювання кез-функції (LRU cache hit/miss)
+    cached_search_ids(query_str, id(index))
+
+    # 6. Додаємо сніпети до результатів
+    final_results = []
+    for res in results[:top_k]:
+        # Читаємо вміст файлу для зняття сніпета
+        try:
+            with open(res.filename, 'r', encoding='utf-8') as f:
+                content = f.read()
+            snippet = generate_snippet(content, terms)
+        except Exception:
+            snippet = "Текст недоступний"
+            
+        final_results.append(SearchResult(
+            score=res.score,
+            doc_id=res.doc_id,
+            filename=res.filename,
+            snippet=snippet
+        ))
+    return final_results
 
 def main():
-    parser = argparse.ArgumentParser(description="Search in inverted index")
-    parser.add_argument("index_path", type=str, help="Path to saved index file")
-    parser.add_argument("query", type=str, help="Search query")
-    parser.add_argument("--engine", choices=["merge", "set"], default="merge", help="Search engine strategy")
+    parser = argparse.ArgumentParser(description="Ranked Boolean Search with Snippets")
+    parser.add_argument("index_path", type=str, help="Path to saved index file (.pkl or .json)")
+    parser.add_argument("query", type=str, help="Search query (e.g. 'python AND (async OR await)')")
+    parser.add_argument("--scorer", choices=["bm25", "tfidf"], default="bm25", help="Ranking algorithm")
+    parser.add_argument("--top-k", type=int, default=5, help="Number of results to return")
     args = parser.parse_args()
 
     tracemalloc.start()
-    t0 = time.perf_counter()
 
-    if args.index_path.endswith(".json"):
-        idx = InvertedIndex.load_json(args.index_path)
-    else:
-        idx = InvertedIndex.load_pickle(args.index_path)
+    # Всі ресурси відкриваються і гарантовано закриваються через open_index
+    with open_index(args.index_path) as index:
+        scorer = BM25Scorer() if args.scorer == "bm25" else TfIdfScorer()
+        results = execute_search(index, args.query, scorer, top_k=args.top_k)
 
-    if args.engine == "merge":
-        doc_ids = search_merge(idx, args.query)
-    else:
-        doc_ids = search_set(idx, args.query)
-
-    t1 = time.perf_counter()
     _, peak_mem = tracemalloc.get_traced_memory()
     tracemalloc.stop()
 
-    print(f"Found {len(doc_ids)} documents in {t1 - t0:.6f} s | Peak memory: {peak_mem / 1024 / 1024:.2f} MB")
-    for d_id in doc_ids[:5]:
-        meta = idx.metadata.get(d_id)
-        print(f"  [Doc {d_id}] {meta.filename if meta else 'Unknown'} (length: {meta.length if meta else 0})")
+    print(f"\nFound {len(results)} top results | Peak memory: {peak_mem / 1024 / 1024:.2f} MB\n")
+    for r in results:
+        print(f" Score: {r.score:.4f} | [Doc {r.doc_id}] {r.filename}")
+        print(f" Snippet: {r.snippet}\n")
 
 if __name__ == "__main__":
     main()

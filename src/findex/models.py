@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import List, Tuple, Dict, Any, Optional
+from dataclasses import dataclass, field
+from typing import List, Tuple, Optional
 import array
 
 @dataclass(frozen=True, slots=True)
@@ -25,3 +25,11 @@ class CompactPostingStorage:
 
     def to_list(self) -> List[Tuple[int, int]]:
         return [(self.data[i], self.data[i+1]) for i in range(0, len(self.data), 2)]
+
+# --- НОВИЙ КЛАС ДЛЯ ЛАБ 3 ---
+@dataclass(order=True, frozen=True, slots=True)
+class SearchResult:
+    score: float
+    doc_id: int = field(compare=False)
+    filename: str = field(compare=False)
+    snippet: str = field(compare=False)
