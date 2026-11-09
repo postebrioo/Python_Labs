@@ -1,5 +1,4 @@
-from findex.query_parser import parse_query, Term, Phrase, And, Or, Not
-
+from findex.query_parser import parse_query, Term, Phrase, And, Or
 def test_ast_parsing():
     q1 = parse_query('python AND (async OR await)')
     expected1 = And(Term('python'), Or(Term('async'), Term('await')))
