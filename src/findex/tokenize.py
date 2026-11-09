@@ -5,21 +5,19 @@ from typing import Iterator
 def tokenize(text: str) -> Iterator[str]:
     """
     Лінивий генератор токенів:
-    - Застосовує Unicode NFC нормалізацію та casefold() на самому початку.
-    - Зберігає внутрішні апострофи (' та ’).
-    - Виключає суто числові токени.
+    - Нормалізує Unicode NFC на вхідному тексті.
+    - Переводить у casefold.
+    - Коректно виділяє слова з урахуванням діакритики та апострофів.
     """
-    # Спочатку приводимо весь текст до NFC, щоб символи наголосу злилися з літерами
-    normalized_text = unicodedata.normalize('NFC', text).casefold()
+    normalized = unicodedata.normalize('NFC', text).casefold()
     
-    # Паттерн для пошуку слів з урахуванням апострофів
-    pattern = r"[0-9a-zA-Zа-яА-ЯєЄіІїЇґҐ'’]+"
+    # Використовуємо значно надійніший шаблон із \w, який захоплює всі літери включно з діакритикою та апострофами
+    pattern = r"[0-9a-zA-Zа-яА-ЯєЄіІїЇґҐ'’\w]+"
     
-    for match in re.finditer(pattern, normalized_text):
+    for match in re.finditer(pattern, normalized):
         token = match.group().strip("'’")
         if not token or token.isdigit():
             continue
         yield token
 
-# Дублюємо для повної сумісності
 tokenize_text = tokenize
