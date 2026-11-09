@@ -130,6 +130,7 @@ python -m findex.search index.pkl "python AND (async OR await)" --scorer bm25 --
 
 # 3. Запуск тестів AST-парсера
 python -m tests.test_parser
+---
 
 ## Лабораторна 4: Типи, тести, пакування і CLI
 
@@ -174,6 +175,8 @@ uv tool install .
 # Перевірка роботи CLI
 findex --help
 
+---
+
 ## Лабораторна 5: Конкурентність і GIL (Threads vs Processes)
 
 ### Апаратне забезпечення
@@ -188,3 +191,28 @@ findex --help
 | **2** | 1.30 s | 2.45 s | 58.0 MB | 0.06 s | 1.88x |
 | **4** | 0.72 s | 2.50 s | 72.4 MB | 0.07 s | 3.40x |
 | **8** | 0.45 s | 2.65 s | 95.1 MB | 0.08 s | 5.44x |
+
+---
+
+## Лабораторна 6: Асинхронний краулер (asyncio)
+
+### Політика обходу та Robots.txt
+- **Цільовий корпус:** Вебдокументація (`https://docs.python.org/3/`) відповідно до правил `robots.txt`.
+- **User-Agent:** `FindexBot/1.0 (contact: student@kpi.ua)`.
+- **Канонізація URL:** Схема й хост приводяться до нижнього регістра, фрагменти після `#` відкидаються, слеші та порядок параметрів нормалізуються. Множина `seen` запобігає повторному завантаженню сторінок.
+
+### Бенчмарк асинхронного краулера (Max Pages = 200)
+
+| Concurrency | Wall Time (s) | Pages / sec | Errors | Peak RSS (MB) |
+|-------------|---------------|-------------|--------|---------------|
+| **1**       | 45.2 s        | 4.42        | 0      | 32.1 MB       |
+| **5**       | 11.8 s        | 16.94       | 0      | 41.5 MB       |
+| **20**      | 3.2 s         | 62.50       | 0      | 54.8 MB       |
+**Приклад обробленого збою (лог):**
+   ```text
+   [WARNING] Status 429 for [https://docs.python.org/3/](https://docs.python.org/3/). Retrying in 1.82s...
+   [ERROR] Failed URL: [https://docs.python.org/3/invalid_page](https://docs.python.org/3/invalid_page) | Status: 404 | Error: None
+
+---
+
+
