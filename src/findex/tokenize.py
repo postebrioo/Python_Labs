@@ -6,18 +6,19 @@ def tokenize(text: str) -> Iterator[str]:
     """
     Лінивий генератор токенів:
     - Застосовує Unicode NFC нормалізацію та casefold().
-    - Зберігає внутрішні апострофи (у т.ч. український ' та прямий ').
+    - Зберігає внутрішні апострофи (' та ’).
     - Виключає суто числові токени.
     """
     normalized_text = unicodedata.normalize('NFC', text).casefold()
     
-    # Виправлений паттерн: дозволяє букви (включно з кирилицею) та апострофи всередині
-    pattern = r"[0-9a-zA-Zа-яА-ЯєЄіІїЇґҐ']+"
+    # Підтримуємо обидва види апострофів: звичайний ' та український ’
+    pattern = r"[0-9a-zA-Zа-яА-ЯєЄіІїЇґҐ'’]+"
     
     for match in re.finditer(pattern, normalized_text):
-        token = match.group().strip("'")
+        token = match.group().strip("'’")
         if not token or token.isdigit():
             continue
         yield token
 
+# Дублюємо для сумісності
 tokenize_text = tokenize
