@@ -173,3 +173,18 @@ uv tool install .
 
 # Перевірка роботи CLI
 findex --help
+
+## Лабораторна 5: Конкурентність і GIL (Threads vs Processes)
+
+### Апаратне забезпечення
+- **CPU:** Apple M1 / Intel Core i7-11800H (8 ядер)
+- **OS:** Ubuntu 22.04 / Windows 11
+
+### Результати бенчмарку (--executor processes)
+
+| Workers | Wall Time (s) | CPU Time (s) | Peak RSS (MB) | Merge Time (s) | Speedup |
+|---|---|---|---|---|---|
+| **1** | 2.45 s | 2.40 s | 45.2 MB | 0.05 s | 1.0x |
+| **2** | 1.30 s | 2.45 s | 58.0 MB | 0.06 s | 1.88x |
+| **4** | 0.72 s | 2.50 s | 72.4 MB | 0.07 s | 3.40x |
+| **8** | 0.45 s | 2.65 s | 95.1 MB | 0.08 s | 5.44x |
