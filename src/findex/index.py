@@ -3,6 +3,7 @@ import time
 import json
 import pickle
 import array
+from dataclasses import dataclass
 from collections import defaultdict, Counter
 from typing import Dict, List, Tuple, Any, Optional
 from pathlib import Path
