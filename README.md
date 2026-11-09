@@ -130,6 +130,7 @@ python -m findex.search index.pkl "python AND (async OR await)" --scorer bm25 --
 
 # 3. Запуск тестів AST-парсера
 python -m tests.test_parser
+```
 ---
 
 ## Лабораторна 4: Типи, тести, пакування і CLI
