@@ -190,3 +190,5 @@ def build_index_parallel(corpus_dir: str, workers: int = 1, executor_type: str =
     idx.index = defaultdict(list, index_data)
     idx.metadata = metadata
     return idx
+
+Index = InvertedIndex
