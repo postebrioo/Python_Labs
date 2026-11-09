@@ -18,4 +18,6 @@ jobs:
       - name: Install dependencies
         run: pip install pytest pytest-cov typer rich hypothesis
       - name: Run Pytest
-        run: pytest --cov=src/findex tests/
+        run: python -m pytest --cov=src/findex tests/
+        env:
+          PYTHONPATH: src
