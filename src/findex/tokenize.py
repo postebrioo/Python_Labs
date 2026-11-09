@@ -2,19 +2,27 @@ import re
 import unicodedata
 from typing import Iterator
 
-# Словні токени: літери (будь-якої абетки), які можуть містити апостроф усередині
-TOKEN_PATTERN = re.compile(r"\b[^\W\d_]+(?:['’][^\W\d_]+)*\b", re.UNICODE)
-
-
 def tokenize(text: str) -> Iterator[str]:
-    """Стрімінговий токенізатор.
-    
-    1. Приводить рядок до форми NFC.
-    2. Виконує повний casefold.
-    3. Ліниво повертає збіги за допомогою finditer.
     """
-    normalized = unicodedata.normalize("NFC", text)
-    folded = normalized.casefold()
+    Лінивий генератор токенів:
+    - Застосовує Unicode NFC нормалізацію та casefold().
+    - Зберігає внутрішні апострофи ('').
+    - Розбиває дефісні слова на окремі токени.
+    - Виключає суто числові токени.
+    """
+    # Нормалізація Unicode NFC та casefold
+    normalized_text = unicodedata.normalize('NFC', text).casefold()
+    
+    # Регулярний вираз для пошуку слів (дозволяє внутрішні апострофи)
+    # Знаходить послідовності букв та цифр, які можуть містити апостроф всередині
+    pattern = r"[^\W\d_]+(?:'[^\W\d_]+)*"
+    
+    for match in re.finditer(pattern, normalized_text):
+        token = match.group()
+        # Виключаємо суто числові токени
+        if token.isdigit():
+            continue
+        yield token
 
-    for match in TOKEN_PATTERN.finditer(folded):
-        yield match.group(0)
+# Дублюємо ім'я для повної сумісності з іншими модулями (index.py)
+tokenize_text = tokenize
