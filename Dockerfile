@@ -2,17 +2,20 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Копіюємо конфігурацію проєкту та вихідний код
+# Копіюємо конфігурацію та вихідний код разом із корпусом даних
 COPY pyproject.toml ./
 COPY src/ ./src/
-COPY index.pkl ./index.pkl
+COPY data/ ./data/
 
-# Встановлюємо пакет і всі залежності через звичайний pip
+# Встановлюємо пакет через pip
 RUN pip install --no-cache-dir .
+
+# Генеруємо файл індексу прямо всередині контейнера при збірці
+RUN python -m findex.cli index data/ --out index.pkl --positions
 
 ENV INDEX_PATH="index.pkl"
 
-# З міркувань безпеки створюємо не-root користувача
+# Створюємо не-root користувача для безпеки
 RUN useradd -m findexuser && chown -R findexuser:findexuser /app
 USER findexuser
 
