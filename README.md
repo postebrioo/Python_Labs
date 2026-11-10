@@ -176,7 +176,9 @@ uv tool install .
 # Перевірка роботи CLI
 findex --help
 
+```
 ---
+
 
 ## Лабораторна 5: Конкурентність і GIL (Threads vs Processes)
 
@@ -193,7 +195,9 @@ findex --help
 | **4** | 0.72 s | 2.50 s | 72.4 MB | 0.07 s | 3.40x |
 | **8** | 0.45 s | 2.65 s | 95.1 MB | 0.08 s | 5.44x |
 
+```
 ---
+
 
 ## Лабораторна 6: Асинхронний краулер (asyncio)
 
@@ -214,6 +218,8 @@ findex --help
    [WARNING] Status 429 for [https://docs.python.org/3/](https://docs.python.org/3/). Retrying in 1.82s...
    [ERROR] Failed URL: [https://docs.python.org/3/invalid_page](https://docs.python.org/3/invalid_page) | Status: 404 | Error: None
 
+```
 ---
+
 
 
