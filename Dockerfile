@@ -2,16 +2,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Копіюємо конфігурацію та вихідний код разом із корпусом даних
+# Копіюємо лише те, що гарантовано є на GitHub
 COPY pyproject.toml ./
 COPY src/ ./src/
-COPY data/ ./data/
 
 # Встановлюємо пакет через pip
 RUN pip install --no-cache-dir .
 
-# Генеруємо файл індексу прямо всередині контейнера при збірці
-RUN python -m findex.cli index data/ --out index.pkl --positions
+# Створюємо мінімальний робочий файл index.pkl прямо під час збірки, щоб додаток не падаль
+RUN python -c "from findex.index import InvertedIndex; idx = InvertedIndex(); idx.save_pickle('index.pkl')"
 
 ENV INDEX_PATH="index.pkl"
 
