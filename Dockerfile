@@ -2,14 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Копіюємо лише те, що гарантовано є на GitHub
+# Копіюємо конфігурацію та вихідний код
 COPY pyproject.toml ./
 COPY src/ ./src/
 
-# Встановлюємо пакет через pip
-RUN pip install --no-cache-dir .
+# Встановлюємо шлях до вихідного коду, щоб Python бачив пакет findex
+ENV PYTHONPATH=/app/src
 
-# Створюємо мінімальний робочий файл index.pkl прямо під час збірки, щоб додаток не падаль
+# Встановлюємо необхідні вебзалежності напряму
+RUN pip install --no-cache-dir fastapi uvicorn pydantic pydantic-settings jinja2
+
+# Створюємо мінімальний робочий файл index.pkl під час збірки
 RUN python -c "from findex.index import InvertedIndex; idx = InvertedIndex(); idx.save_pickle('index.pkl')"
 
 ENV INDEX_PATH="index.pkl"
