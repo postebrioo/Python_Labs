@@ -2,17 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Копіюємо весь проєкт включно з папкою src
+# Копіюємо конфігурацію та вихідний код
 COPY pyproject.toml ./
 COPY src/ ./src/
 
-# Встановлюємо PYTHONPATH, щоб Python одразу бачив вміст папки src
-ENV PYTHONPATH="/app/src"
+# Встановлюємо сам пакет findex та всі необхідні бібліотеки через pip
+RUN pip install --no-cache-dir . fastapi uvicorn pydantic pydantic-settings jinja2
 
-# Встановлюємо вебзалежності
-RUN pip install --no-cache-dir fastapi uvicorn pydantic pydantic-settings jinja2
-
-# Генеруємо мінімальний робочий індекс для сервісу
+# Генеруємо мінімальний робочий файл index.pkl під час збірки
 RUN python -c "from findex.index import InvertedIndex; idx = InvertedIndex(); idx.save_pickle('index.pkl')"
 
 ENV INDEX_PATH="index.pkl"
