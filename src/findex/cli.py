@@ -1,6 +1,7 @@
 from findex.crawler import crawl_site
 import asyncio
 import json
+import uvicorn
 
 @app.command()
 def crawl(
@@ -20,5 +21,12 @@ def crawl(
                 console.print(f"[{page['doc_id']}/{max_pages}] Collected: {page['url']}")
             t1 = time.perf_counter()
             console.print(f"[bold green]Crawled successfully in {t1 - t0:.2f}s. Saved to {out_jsonl}[/bold green]")
+
+def serve(
+    port: int = typer.Option(8000, "--port", "-p", help="Port to run server"),
+    workers: int = typer.Option(1, "--workers", "-w", help="Number of uvicorn workers")
+) -> None:
+    """Start FastAPI web server via uvicorn."""
+    uvicorn.run("findex.web.app:app", host="0.0.0.0", port=port, workers=workers, reload=False)
 
     asyncio.run(run())
