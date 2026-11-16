@@ -2,11 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Копіюємо конфігурацію та вихідний код
-COPY pyproject.toml ./
+# Копіюємо конфігурацію, README та вихідний код
+COPY pyproject.toml README.md ./
 COPY src/ ./src/
 
-# Встановлюємо сам пакет findex та всі необхідні бібліотеки через pip
+# Встановлюємо пакет та всі необхідні бібліотеки через pip
 RUN pip install --no-cache-dir . fastapi uvicorn pydantic pydantic-settings jinja2
 
 # Генеруємо мінімальний робочий файл index.pkl під час збірки
