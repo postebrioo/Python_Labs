@@ -112,6 +112,14 @@ class InvertedIndex:
         return obj
 
 
+def open_index(filepath: str) -> InvertedIndex:
+    """Функція для відкриття індексу залежно від формату файлу"""
+    path = Path(filepath)
+    if path.suffix == '.json':
+        return InvertedIndex.load_json(filepath)
+    return InvertedIndex.load_pickle(filepath)
+
+
 # Функція рівня модуля для паралельної збірки (multiprocessing spawn)
 def build_partial(file_paths: List[str], start_doc_id: int, keep_positions: bool = False) -> Tuple[Dict[str, List[Posting]], Dict[int, DocMeta]]:
     local_index: Dict[str, List[Posting]] = defaultdict(list)
