@@ -4,13 +4,19 @@ build-backend = "hatchling.build"
 
 [project]
 name = "findex"
-version = "0.4.0"
+version = "0.8.0"
 description = "Search engine CLI tool"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "typer>=0.9.0",
     "rich>=13.0.0",
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "pydantic-settings",
+    "jinja2",
+    "numpy"
 ]
 
 [project.scripts]
