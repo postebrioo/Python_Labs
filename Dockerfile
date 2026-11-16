@@ -2,19 +2,22 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Копіюємо конфігурацію, файли проєкту та вихідний код
+# Копіюємо конфігурацію та вихідний код
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
 
-# Встановлюємо пакет у режимі редагування, щоб Python бачив findex з будь-якого місця
+# Встановлюємо пакет та необхідні бібліотеки через pip
 RUN pip install --no-cache-dir . fastapi uvicorn pydantic pydantic-settings jinja2
 
-# Генеруємо мінімальний робочий індекс для сервісу під час збірки
-RUN python -c "from findex.index import InvertedIndex; idx = InvertedIndex(); idx.save_pickle('index.pkl')"
+# Переходимо всередину папки src, щоб python/uvicorn бачив пакет findex напряму
+WORKDIR /app/src
 
-ENV INDEX_PATH="index.pkl"
+# Генеруємо мінімальний робочий індекс для сервісу
+RUN python -c "from findex.index import InvertedIndex; idx = InvertedIndex(); idx.save_pickle('/app/index.pkl')"
 
-# Створюємо не-root користувача з міркувань безпеки
+ENV INDEX_PATH="/app/index.pkl"
+
+# Створюємо не-root користувача для безпеки та даємо йому права на всю папку /app
 RUN useradd -m findexuser && chown -R findexuser:findexuser /app
 USER findexuser
 
